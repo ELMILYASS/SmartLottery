@@ -58,7 +58,7 @@ contract RaffleTest is StdCheats, Test {
 
     function testRaffleRevertsWHenYouDontPayEnought() public {
         // Arrange
-        vm.prank(PLAYER);
+        vm.prank(PLAYER); // the next transaction will be performed by user with address PLAYER
         // Act / Assert
         vm.expectRevert(Raffle.Raffle__SendMoreToEnterRaffle.selector);
         raffle.enterRaffle();
@@ -81,15 +81,15 @@ contract RaffleTest is StdCheats, Test {
         // Act / Assert
         vm.expectEmit(true, false, false, false, address(raffle));
         emit RaffleEnter(PLAYER);
-        raffle.enterRaffle{value: raffleEntranceFee}();
+        raffle.enterRaffle{value: raffleEntranceFee}(); // we expect this to emit the event RaffleEnter
     }
 
     function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
         // Arrange
         vm.prank(PLAYER);
         raffle.enterRaffle{value: raffleEntranceFee}();
-        vm.warp(block.timestamp + automationUpdateInterval + 1);
-        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + automationUpdateInterval + 1); // we set block.timestamp
+        vm.roll(block.number + 1); // we set block.number
         raffle.performUpkeep("");
 
         // Act / Assert
@@ -127,9 +127,6 @@ contract RaffleTest is StdCheats, Test {
         assert(raffleState == Raffle.RaffleState.CALCULATING);
         assert(upkeepNeeded == false);
     }
-
-    // Can you implement this?
-    function testCheckUpkeepReturnsFalseIfEnoughTimeHasntPassed() public {}
 
     function testCheckUpkeepReturnsTrueWhenParametersGood() public {
         // Arrange
@@ -188,8 +185,8 @@ contract RaffleTest is StdCheats, Test {
         // Act
         vm.recordLogs();
         raffle.performUpkeep(""); // emits requestId
-        Vm.Log[] memory entries = vm.getRecordedLogs();
-        bytes32 requestId = entries[1].topics[1];
+        Vm.Log[] memory entries = vm.getRecordedLogs(); // to get all events emitted by performUpKeep
+        bytes32 requestId = entries[1].topics[1]; // topics[0] is the event , topics[1] the first parameter returned by the event
 
         // Assert
         Raffle.RaffleState raffleState = raffle.getRaffleState();
@@ -232,7 +229,7 @@ contract RaffleTest is StdCheats, Test {
         );
 
         vm.expectRevert("nonexistent request");
-
+        // fulfillRandomWords can be called only by chainlink , so in a real testnet we can't test that , so we test that on local and we pretend we are VRFCoordinator smart contract and we call the function fulfillRandomWords
         VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(
             1,
             address(raffle)
@@ -268,7 +265,8 @@ contract RaffleTest is StdCheats, Test {
         raffle.performUpkeep(""); // emits requestId
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bytes32 requestId = entries[1].topics[1]; // get the requestId from the logs
-
+        // if we are on a testnet we should use VRFCoordinatorInterface (not the mock) to perform a fulfullRandomWords and we should specify another params
+        // pretend that we are chainlink vrf and call fulfillRandomWords,
         VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(
             uint256(requestId),
             address(raffle)

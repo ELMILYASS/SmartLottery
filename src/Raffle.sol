@@ -1,4 +1,4 @@
-// Layout of Contract:
+// Layout of Contract: //for a better organisation
 // version
 // imports
 // errors
@@ -28,7 +28,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 
 /**@title A sample Raffle Contract
- * @author Patrick Collins
+ * @author Ilyass from Patrick Collins course
  * @notice This contract is for creating a sample raffle contract
  * @dev This implements the Chainlink VRF Version 2
  */
@@ -58,7 +58,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     uint32 private constant NUM_WORDS = 1;
 
     // Lottery Variables
-    uint256 private immutable i_interval;
+    uint256 private immutable i_interval; //duration of the lottery in seconds
     uint256 private immutable i_entranceFee;
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
@@ -85,7 +85,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         i_subscriptionId = subscriptionId;
         i_entranceFee = entranceFee;
         s_raffleState = RaffleState.OPEN;
-        s_lastTimeStamp = block.timestamp;
+        s_lastTimeStamp = block.timestamp; // we start the clock
         i_callbackGasLimit = callbackGasLimit;
     }
 
@@ -144,6 +144,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
             );
         }
         s_raffleState = RaffleState.CALCULATING;
+        // we send a request to a chainlink node (vrfCoordinator using a smartContract) to get a random number
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -157,18 +158,12 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
 
     /**
      * @dev This is the function that Chainlink VRF node
-     * calls to send the money to the random winner.
+     * calls automatically after the request to send the money to the random winner.
      */
     function fulfillRandomWords(
         uint256 /* requestId */,
         uint256[] memory randomWords
     ) internal override {
-        // s_players size 10
-        // randomNumber 202
-        // 202 % 10 ? what's doesn't divide evenly into 202?
-        // 20 * 10 = 200
-        // 2
-        // 202 % 10 = 2
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;

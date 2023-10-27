@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.19;
 
 import {Script, console} from "forge-std/Script.sol";
@@ -8,6 +9,7 @@ import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
 import {VRFCoordinatorV2Mock} from "../test/mocks/VRFCoordinatorV2Mock.sol";
 import {LinkToken} from "../test/mocks/LinkToken.sol";
 
+// this contract is used to interact with external services such as creating  a subscription
 contract CreateSubscription is Script {
     function createSubscriptionUsingConfig() public returns (uint64) {
         HelperConfig helperConfig = new HelperConfig();
@@ -40,48 +42,6 @@ contract CreateSubscription is Script {
 
     function run() external returns (uint64) {
         return createSubscriptionUsingConfig();
-    }
-}
-
-contract AddConsumer is Script {
-    function addConsumer(
-        address contractToAddToVrf,
-        address vrfCoordinator,
-        uint64 subId,
-        uint256 deployerKey
-    ) public {
-        console.log("Adding consumer contract: ", contractToAddToVrf);
-        console.log("Using vrfCoordinator: ", vrfCoordinator);
-        console.log("On ChainID: ", block.chainid);
-        vm.startBroadcast(deployerKey);
-        VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(
-            subId,
-            contractToAddToVrf
-        );
-        vm.stopBroadcast();
-    }
-
-    function addConsumerUsingConfig(address mostRecentlyDeployed) public {
-        HelperConfig helperConfig = new HelperConfig();
-        (
-            uint64 subId,
-            ,
-            ,
-            ,
-            ,
-            address vrfCoordinatorV2,
-            ,
-            uint256 deployerKey
-        ) = helperConfig.activeNetworkConfig();
-        addConsumer(mostRecentlyDeployed, vrfCoordinatorV2, subId, deployerKey);
-    }
-
-    function run() external {
-        address mostRecentlyDeployed = DevOpsTools.get_most_recent_deployment(
-            "Raffle",
-            block.chainid
-        );
-        addConsumerUsingConfig(mostRecentlyDeployed);
     }
 }
 
@@ -136,5 +96,47 @@ contract FundSubscription is Script {
 
     function run() external {
         fundSubscriptionUsingConfig();
+    }
+}
+
+contract AddConsumer is Script {
+    function addConsumer(
+        address contractToAddToVrf,
+        address vrfCoordinator,
+        uint64 subId,
+        uint256 deployerKey
+    ) public {
+        console.log("Adding consumer contract: ", contractToAddToVrf);
+        console.log("Using vrfCoordinator: ", vrfCoordinator);
+        console.log("On ChainID: ", block.chainid);
+        vm.startBroadcast(deployerKey); // only the owner of the subscription who can add a consumer to it , that's why we defined a deployer key
+        VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(
+            subId,
+            contractToAddToVrf
+        );
+        vm.stopBroadcast();
+    }
+
+    function addConsumerUsingConfig(address mostRecentlyDeployed) public {
+        HelperConfig helperConfig = new HelperConfig();
+        (
+            uint64 subId,
+            ,
+            ,
+            ,
+            ,
+            address vrfCoordinatorV2,
+            ,
+            uint256 deployerKey
+        ) = helperConfig.activeNetworkConfig();
+        addConsumer(mostRecentlyDeployed, vrfCoordinatorV2, subId, deployerKey);
+    }
+
+    function run() external {
+        address mostRecentlyDeployed = DevOpsTools.get_most_recent_deployment(
+            "Raffle",
+            block.chainid
+        );
+        addConsumerUsingConfig(mostRecentlyDeployed);
     }
 }
